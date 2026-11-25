@@ -20,12 +20,12 @@ use windows::Win32::Graphics::Dwm::{
 use windows::Win32::Graphics::Gdi::{
     BeginPaint, BitBlt, CreateCompatibleBitmap, CreateCompatibleDC, CreateFontW, CreatePen,
     CreateSolidBrush, DT_CENTER, DT_END_ELLIPSIS, DT_NOPREFIX, DT_SINGLELINE, DT_VCENTER, DeleteDC,
-    DeleteObject, DrawTextW, EndPaint, FONT_CHARSET, FONT_CLIP_PRECISION, FONT_OUTPUT_PRECISION,
-    FONT_QUALITY, FillRect, GetMonitorInfoW, GetStockObject, HBRUSH, HDC, HFONT, HGDIOBJ,
-    HOLLOW_BRUSH, InvalidateRect, LineTo, MONITOR_DEFAULTTONEAREST, MONITORINFO, MonitorFromWindow,
-    MoveToEx, NULL_PEN, PAINTSTRUCT, PS_SOLID, RDW_ALLCHILDREN, RDW_ERASE, RDW_FRAME,
-    RDW_INVALIDATE, Rectangle, RedrawWindow, RoundRect, SRCCOPY, ScreenToClient, SelectObject,
-    SetBkColor, SetBkMode, SetTextColor, TRANSPARENT,
+    DeleteObject, DrawTextW, Ellipse, EndPaint, FONT_CHARSET, FONT_CLIP_PRECISION,
+    FONT_OUTPUT_PRECISION, FONT_QUALITY, FillRect, GetMonitorInfoW, GetStockObject, HBRUSH, HDC,
+    HFONT, HGDIOBJ, HOLLOW_BRUSH, InvalidateRect, LineTo, MONITOR_DEFAULTTONEAREST, MONITORINFO,
+    MonitorFromWindow, MoveToEx, NULL_PEN, PAINTSTRUCT, PS_SOLID, RDW_ALLCHILDREN, RDW_ERASE,
+    RDW_FRAME, RDW_INVALIDATE, Rectangle, RedrawWindow, RoundRect, SRCCOPY, ScreenToClient,
+    SelectObject, SetBkColor, SetBkMode, SetTextColor, TRANSPARENT,
 };
 use windows::Win32::System::LibraryLoader::{GetModuleHandleW, GetProcAddress, LoadLibraryW};
 use windows::Win32::UI::Controls::{EM_SETSEL, MARGINS, WM_MOUSELEAVE};
@@ -47,9 +47,10 @@ use windows::Win32::UI::WindowsAndMessaging::{
     GetWindowLongPtrW, GetWindowRect, GetWindowTextLengthW, GetWindowTextW, HICON, HMENU,
     HTBOTTOM, HTBOTTOMLEFT, HTBOTTOMRIGHT, HTCAPTION, HTCLIENT, HTLEFT, HTRIGHT, HTTOP, HTTOPLEFT,
     HTTOPRIGHT, ICON_BIG, ICON_SMALL, IDC_ARROW, IDC_HAND, IDNO, IDOK, IDYES, IsIconic, IsZoomed,
-    KillTimer, LR_DEFAULTCOLOR, LoadCursorW, MB_ICONERROR, MB_ICONQUESTION, MB_ICONWARNING, MB_OK,
-    MB_OKCANCEL, MB_YESNOCANCEL, MSG, MessageBoxW, MoveWindow, NCCALCSIZE_PARAMS, PostMessageW,
-    PostQuitMessage, RegisterClassW, SM_CXSCREEN, SM_CYSCREEN, SW_HIDE, SW_MAXIMIZE, SW_MINIMIZE,
+    KillTimer, LR_DEFAULTCOLOR, LoadCursorW, MB_ICONERROR, MB_ICONINFORMATION, MB_ICONQUESTION,
+    MB_ICONWARNING, MB_OK, MB_OKCANCEL, MB_YESNO, MB_YESNOCANCEL, MSG, MessageBoxW, MoveWindow,
+    NCCALCSIZE_PARAMS, PostMessageW, PostQuitMessage, RegisterClassW, SM_CXSCREEN, SM_CYSCREEN,
+    SW_HIDE, SW_MAXIMIZE, SW_MINIMIZE,
     SW_RESTORE, SW_SHOW, SWP_FRAMECHANGED, SWP_NOMOVE, SWP_NOSIZE, SWP_NOZORDER, SendMessageW,
     SetCursor, SetTimer, SetWindowLongPtrW, SetWindowPos, SetWindowTextW, ShowWindow,
     TranslateMessage, WM_ACTIVATE, WM_CLOSE, WM_COMMAND, WM_CREATE, WM_CTLCOLOREDIT, WM_CTLCOLORSTATIC, WM_DESTROY,
@@ -71,12 +72,12 @@ use crate::core::storage::{
     DocumentEncodingMeta, LoadedDocument, load_document, save_document_atomic,
 };
 use crate::ui::editor_view::EditorView;
-use crate::ui::reader_view::ReaderView;
+use crate::ui::reader_view::{ReaderView, open_safe_link};
 use crate::ui::sidebar::{SIDEBAR_WIDTH_DIP, SidebarView};
 use crate::ui::theme::{RgbColor, ThemePalette};
 use crate::ui::{
-    APP_DISPLAY_NAME, AppMode, IDC_FIND_INPUT, IDC_FIND_STATUS, IDC_READER, WM_APP_READER_SCROLLED,
-    WM_APP_SIDEBAR_HISTORY_OPEN, WM_APP_SIDEBAR_OUTLINE_JUMP,
+    APP_DISPLAY_NAME, APP_REPO_URL, APP_VERSION, AppMode, IDC_FIND_INPUT, IDC_FIND_STATUS,
+    IDC_READER, WM_APP_READER_SCROLLED, WM_APP_SIDEBAR_HISTORY_OPEN, WM_APP_SIDEBAR_OUTLINE_JUMP,
 };
 
 /// 主窗口类名称。
@@ -105,6 +106,8 @@ enum TitleBtn {
     ModePrimary,
     /// 关闭软件按钮（「关闭」）。
     CloseApp,
+    /// 右上角关于与仓库图标按钮（`ⓘ`，位于最小化按钮左侧）。
+    About,
     /// 右上角窗口最小化按钮。
     WinMin,
     /// 右上角窗口最大化/还原按钮。
@@ -438,6 +441,18 @@ impl MainWindowState {
                     bottom: btn_y + btn_h,
                 }
             }
+            TitleBtn::About => {
+                let min_left = (client_w - sys_w * 3).max(self.dip(250));
+                let about_w = self.dip(30);
+                let right = min_left - self.dip(6);
+                let left = (right - about_w).max(self.dip(250));
+                RECT {
+                    left,
+                    top: btn_y,
+                    right,
+                    bottom: btn_y + btn_h,
+                }
+            }
             TitleBtn::WinMin => RECT {
                 left: (client_w - sys_w * 3).max(self.dip(250)),
                 top: 0,
@@ -468,6 +483,7 @@ impl MainWindowState {
             TitleBtn::Open,
             TitleBtn::ModePrimary,
             TitleBtn::CloseApp,
+            TitleBtn::About,
             TitleBtn::WinMin,
             TitleBtn::WinMax,
             TitleBtn::WinClose,
@@ -1022,6 +1038,20 @@ impl MainWindowState {
             TitleBtn::CloseApp | TitleBtn::WinClose => {
                 let _ = unsafe { PostMessageW(Some(self.hwnd), WM_CLOSE, WPARAM(0), LPARAM(0)) };
             }
+            TitleBtn::About => {
+                let msg = format!(
+                    "MDReader v{APP_VERSION}\n\n纯粹、极低内存的 Windows 原生 Markdown 阅读器。\n\nGitHub 仓库：\n{APP_REPO_URL}\n\n是否使用默认浏览器打开项目主页？"
+                );
+                let ans = show_message_box(
+                    self.hwnd,
+                    "关于 MDReader",
+                    &msg,
+                    MB_YESNO | MB_ICONINFORMATION,
+                );
+                if ans == IDYES {
+                    open_safe_link(APP_REPO_URL);
+                }
+            }
             TitleBtn::WinMin => unsafe {
                 let _ = ShowWindow(self.hwnd, SW_MINIMIZE);
             },
@@ -1393,8 +1423,14 @@ impl MainWindowState {
                     }
 
                     // 6. 中间区域柔和展示当前文档文件名（窗口过窄时自动收缩避让）
+                    let about_rc = self.titlebar_button_rect(TitleBtn::About, cw);
                     let title_left = self.dip(252);
-                    let title_right = (cw - self.dip(46) * 3 - self.dip(12)).max(title_left);
+                    let right_guard = if about_rc.right > about_rc.left {
+                        about_rc.left - self.dip(8)
+                    } else {
+                        cw - self.dip(46) * 3 - self.dip(12)
+                    };
+                    let title_right = right_guard.max(title_left);
                     if title_right - title_left >= self.dip(80) && self.current_doc.is_some() {
                         let doc_title = self.current_display_filename();
                         let old_f = SelectObject(mem_dc, HGDIOBJ(self.ui_font.0));
@@ -1413,6 +1449,35 @@ impl MainWindowState {
                             DT_SINGLELINE | DT_CENTER | DT_VCENTER | DT_END_ELLIPSIS | DT_NOPREFIX,
                         );
                         let _ = SelectObject(mem_dc, old_f);
+                    }
+
+                    // 6.5 最小化左侧「关于 ⓘ」矢量图标按钮（展示版本与仓库地址）
+                    if about_rc.right - about_rc.left >= self.dip(22) {
+                        let is_hov = self.hovered_btn == Some(TitleBtn::About);
+                        let is_prs = self.pressed_btn == Some(TitleBtn::About);
+                        if is_hov || is_prs {
+                            let old_p = SelectObject(mem_dc, null_pen);
+                            let old_b = SelectObject(
+                                mem_dc,
+                                HGDIOBJ(if is_prs {
+                                    press_brush.0
+                                } else {
+                                    hover_brush.0
+                                }),
+                            );
+                            let _ = RoundRect(
+                                mem_dc,
+                                about_rc.left,
+                                about_rc.top,
+                                about_rc.right,
+                                about_rc.bottom,
+                                radius,
+                                radius,
+                            );
+                            let _ = SelectObject(mem_dc, old_b);
+                            let _ = SelectObject(mem_dc, old_p);
+                        }
+                        self.draw_about_icon(mem_dc, &about_rc, is_hov || is_prs);
                     }
 
                     // 7. 右上角三个标准系统窗口控制按钮（最小化 / 最大化或还原 / 关闭）
@@ -1539,6 +1604,52 @@ impl MainWindowState {
                 };
                 FillRect(target_dc, &body_rect, self.brush_bg);
             }
+        }
+    }
+
+    /// 绘制最小化按钮左侧的「关于 ⓘ」圆圈信息矢量图标。
+    unsafe fn draw_about_icon(&self, hdc: HDC, btn_rc: &RECT, active: bool) {
+        let stroke_w = ((1.4 * self.dpi_scale()).round() as i32).max(1);
+        let color = if active {
+            self.palette.heading_text
+        } else {
+            self.palette.muted_text
+        };
+        unsafe {
+            let pen = CreatePen(PS_SOLID, stroke_w, color.to_colorref());
+            let dot_brush = CreateSolidBrush(color.to_colorref());
+            let old_pen = SelectObject(hdc, HGDIOBJ(pen.0));
+            let old_brush = SelectObject(hdc, GetStockObject(HOLLOW_BRUSH));
+
+            let cx = (btn_rc.left + btn_rc.right) / 2;
+            let cy = (btn_rc.top + btn_rc.bottom) / 2;
+            let r = self.dip(7).max(6);
+
+            // 外圆环
+            let _ = Ellipse(hdc, cx - r, cy - r, cx + r, cy + r);
+
+            // 顶部圆点（'i' 的点）
+            let dot_r = self.dip(1).max(1);
+            let dot_y = cy - self.dip(3);
+            let _ = SelectObject(hdc, HGDIOBJ(dot_brush.0));
+            let _ = SelectObject(hdc, GetStockObject(NULL_PEN));
+            let _ = Ellipse(
+                hdc,
+                cx - dot_r,
+                dot_y - dot_r,
+                cx + dot_r + 1,
+                dot_y + dot_r + 1,
+            );
+
+            // 下部竖线（'i' 的竖干）
+            let _ = SelectObject(hdc, HGDIOBJ(pen.0));
+            let _ = MoveToEx(hdc, cx, cy - self.dip(1), None);
+            let _ = LineTo(hdc, cx, cy + self.dip(4));
+
+            let _ = SelectObject(hdc, old_brush);
+            let _ = SelectObject(hdc, old_pen);
+            let _ = DeleteObject(HGDIOBJ(dot_brush.0));
+            let _ = DeleteObject(HGDIOBJ(pen.0));
         }
     }
 

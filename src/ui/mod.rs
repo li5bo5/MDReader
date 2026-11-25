@@ -23,6 +23,12 @@ pub const LAYER_ID: &str = "ui";
 /// 应用展示名称与窗口标题后缀。
 pub const APP_DISPLAY_NAME: &str = "MDReader";
 
+/// 应用语义版本号（与 `Cargo.toml` 同步）。
+pub const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
+
+/// 官方 GitHub 仓库地址。
+pub const APP_REPO_URL: &str = "https://github.com/li5bo5/MDReader";
+
 /// 极简工具栏控件 ID：模式切换按钮（阅读态显示“编辑”，修改态显示“保存并阅读”）。
 pub const IDC_MODE_TOGGLE: u16 = 1001;
 

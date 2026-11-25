@@ -1569,11 +1569,16 @@ impl ReaderViewState {
 
         // 2. 无参启动极简欢迎状态
         if self.is_empty_welcome && self.doc.blocks.is_empty() {
+            let welcome_body = format!(
+                "点击左上角「打开」按钮、按 Ctrl+O 或直接拖入 .md 文件即可开始阅读。\n打开文件后按 Ctrl+E / F2 可一键切换至修改模式，按 Ctrl+S 保存后自动回到阅读模式。\n\n版本：v{}  ·  仓库：{}",
+                crate::ui::APP_VERSION,
+                crate::ui::APP_REPO_URL
+            );
             self.render_banner_card(
                 rt,
                 brushes,
                 "MDReader 纯粹阅读模式",
-                "点击左上角「打开」按钮、按 Ctrl+O 或直接拖入 .md 文件即可开始阅读。\n打开文件后按 Ctrl+E / F2 可一键切换至修改模式，按 Ctrl+S 保存后自动回到阅读模式。",
+                &welcome_body,
                 false,
             )?;
             return Ok(());
@@ -2962,7 +2967,7 @@ fn resolve_local_image_path(url: &str, doc_dir: Option<&Path>) -> Option<PathBuf
 }
 
 /// 仅允许安全外部协议（`http://`、`https://`、`mailto:`）按需动态调用 `shell32.dll!ShellExecuteW` 打开。
-fn open_safe_link(url: &str) {
+pub(crate) fn open_safe_link(url: &str) {
     type ShellExecuteWFn = unsafe extern "system" fn(
         HWND,
         PCWSTR,
