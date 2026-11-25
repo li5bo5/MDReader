@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" fill="none">
+  <defs>
+    <linearGradient id="bg-paper-card" x1="16" y1="16" x2="496" y2="496" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#F5F1EA"/>
+      <stop offset="100%" stop-color="#E8E1D6"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Borderless rounded square light card base (#F5F1EA -> #E8E1D6) -->
+  <rect x="16" y="16" width="480" height="480" rx="112" ry="112"
+        fill="url(#bg-paper-card)"/>
+
+  <!-- Borderless pure white document sheet (#FFFFFF) -->
+  <path d="M 144 92
+           L 296 92
+           L 400 196
+           L 400 388
+           A 32 32 0 0 1 368 420
+           L 144 420
+           A 32 32 0 0 1 112 388
+           L 112 124
+           A 32 32 0 0 1 144 92 Z"
+        fill="#FFFFFF"/>
+
+  <!-- Warm persimmon (#E06D3B) folded bookmark corner -->
+  <path d="M 296 92
+           L 400 196
+           L 322 196
+           A 26 26 0 0 1 296 170
+           Z"
+        fill="#E06D3B"/>
+
+  <!-- Bold rounded geometric 'M' in deep charcoal ink (#1E2328) -->
+  <path d="M 166 354
+           L 166 214
+           L 256 298
+           L 346 214
+           L 346 354"
+        stroke="#1E2328"
+        stroke-width="38"
+        stroke-linecap="round"
+        stroke-linejoin="round"/>
+</svg>

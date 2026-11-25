@@ -1,0 +1,18 @@
+{
+  "theme": "light",
+  "fontFamily": "Microsoft YaHei UI, Segoe UI, sans-serif",
+  "monoFontFamily": "Cascadia Code, Consolas, monospace",
+  "fontSize": 16,
+  "lineHeight": 1.65,
+  "maxWidth": 760,
+  "pagePadding": 40,
+  "editorFontSize": 15,
+  "editorLineHeight": 1.6,
+  "editorTabSize": 4,
+  "showLineNumbers": true,
+  "wordWrap": true,
+  "rememberWindowGeometry": true,
+  "windowWidth": 960,
+  "windowHeight": 760,
+  "watchFileChanges": false
+}
