@@ -1,10 +1,30 @@
 # Rust 构建产物
 /target/
 **/*.rs.bk
+*.pdb
 
 # 打包与发布产物
 /Publish/
 *.zip
 
-# 本地测试与内存/截图报告
+# AI 规则与本地开发过程文档
+/.agents/
+/IMPLEMENTATION_PLAN.md
+
+# 旧端到端测试脚本、本地基准脚本与报告
+/tests/e2e/
+/scripts/measure-memory.ps1
 /reports/
+
+# 本地运行生成文件
+/config.json
+/history.json
+
+# 编辑器与系统杂项
+.vscode/
+.idea/
+*.swp
+*.swo
+Thumbs.db
+Desktop.ini
+.DS_Store

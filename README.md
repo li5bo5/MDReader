@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="logo.svg" width="96" height="96" alt="MDReader Logo" />
+  <img src="assets/logo.svg" width="96" height="96" alt="MDReader Logo" />
 </p>
 
 <h1 align="center">MDReader</h1>
@@ -79,7 +79,14 @@ cargo build --release
 
 ## 开发与测试
 
-- 完整技术设计文档：[IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md)
-- 单元与集成测试：`cargo test`
-- E2E 端到端测试套件：`powershell -ExecutionPolicy Bypass -File tests\e2e\run-e2e.ps1 -ExePath target\release\MDReader.exe`
-- Windows Working Set 内存基线实测：`powershell -ExecutionPolicy Bypass -File scripts\measure-memory.ps1`
+- 运行 Rust 单元与集成测试：
+
+```powershell
+cargo test
+```
+
+- 构建 Release 正式版（输出至 `target\release\MDReader.exe`）：
+
+```powershell
+cargo build --release
+```

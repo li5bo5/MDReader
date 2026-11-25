@@ -1,0 +1,8 @@
+# 排除关联脚本在 GitHub Languages 中的语言统计，仅展示核心 Rust 源码
+scripts/** linguist-detectable=false
+
+# 统一文本换行与二进制资产属性
+* text=auto eol=lf
+*.ps1 text eol=crlf
+*.ico binary
+*.png binary
